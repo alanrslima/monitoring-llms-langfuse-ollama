@@ -1,6 +1,8 @@
 letsencrypt
 *-data
 
+.DS_Store
+
 # Logs
 logs
 *.log

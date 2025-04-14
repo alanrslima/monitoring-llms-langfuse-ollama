@@ -1,0 +1,39 @@
+# Make sure to update the credential placeholders with your own secrets.
+# We mark them with # CHANGEME in the file below.
+# In addition, we recommend to restrict inbound traffic on the host to langfuse-web (port 3000) and minio (port 9090) only.
+# All other components are bound to localhost (127.0.0.1) to only accept connections from the local machine.
+# External connections from other machines will not be able to reach these services directly.
+services:
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    restart: unless-stopped
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    volumes:
+      - ./ollama-data:/root/.ollama # Shared volume for models
+    ports:
+      - "11434:11434"
+
+  ollama-model-loader:
+    image: docker:latest # 🔥 Uses Docker CLI instead of Ollama
+    container_name: ollama-model-loader
+    depends_on:
+      - ollama
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # 🔥 Allows running commands inside containers
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "⏳ Waiting for Ollama to be ready..."
+        until docker exec ollama ollama list >/dev/null 2>&1; do
+            sleep 2
+        done
+        echo "📥 Pulling models inside Ollama container..."
+        docker exec ollama ollama pull llama3.2:latest
+
+        echo "✅ Models downloaded. Exiting..."
+    restart: "no"
+
+volumes:
+  ollama_data:
